@@ -218,6 +218,9 @@
 /* This is also the frequency of screen refreshes if SDL is enabled. */
 #define REPORT_FREQUENCY 200000
 
+
+#define TOTAL_ITERATIONS 100000000
+
 /* Mutation rate -- range is from 0 (none) to 0xffffffff (all mutations!) */
 /* To get it from a float probability from 0.0 to 1.0, multiply it by
  * 4294967295 (0xffffffff) and round. */
@@ -610,6 +613,14 @@ static void *run(void *targ)
 		/* Increment clock and run reports periodically */
 		/* Clock is incremented at the start, so it starts at 1 */
 		++clock;
+
+        #ifdef TOTAL_ITERATIONS
+        if (clock==TOTAL_ITERATIONS) {
+            exitNow=1;
+        }
+        #endif
+
+
 		if ((threadNo == 0)&&(!(clock % REPORT_FREQUENCY))) {
 			doReport(clock);
 			/* SDL display is also refreshed every REPORT_FREQUENCY */
