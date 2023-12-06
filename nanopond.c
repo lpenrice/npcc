@@ -568,6 +568,12 @@ volatile int exitNow = 0;
 
 static void *run(void *targ)
 {
+    /*Set up timing
+     *      */
+    struct timeval start_time, end_time;
+    int setup_usecs = 0;
+    gettimeofday(&start_time, NULL);
+
 	const uintptr_t threadNo = (uintptr_t)targ;
 	uintptr_t x,y,i;
 	uintptr_t clock = 0;
@@ -609,9 +615,11 @@ static void *run(void *targ)
 	 * to avoid the ugly use of a goto to exit the loop. :) */
 	int stop;
 
-    /*Set up timing
+    /*Finish timing setup
      */
-    struct timeval start_time, end_time;
+    gettimeofday(&end_time, NULL);
+    setup_usecs+=(end_time.tv_usec+1000000*end_time.tv_sec)-(start_time.tv_usec+start_time.tv_sec*1000000);
+    
     int report_usecs = 0; 
 
 	/* Main loop */
@@ -952,7 +960,10 @@ static void *run(void *targ)
 	}
     printf("Report usecs used: %d\n", report_usecs);
     printf("That is %d seconds\n", report_usecs/1000000);
-	return (void *)0;
+    printf("Setup usecs used: %d\n", setup_usecs);
+    printf("That is %d seconds\n", setup_usecs/1000000);
+
+    return (void *)0;
 }
 
 /**
