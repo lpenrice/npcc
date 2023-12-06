@@ -267,6 +267,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/time.h>
 
 #ifdef USE_PTHREADS_COUNT
 #include <pthread.h>
@@ -608,8 +609,14 @@ static void *run(void *targ)
 	 * to avoid the ugly use of a goto to exit the loop. :) */
 	int stop;
 
+    /*Set up timing
+     */
+    struct timeval start_time, end_time;
+    int report_usecs = 0; 
+
 	/* Main loop */
 	while (!exitNow) {
+
 		/* Increment clock and run reports periodically */
 		/* Clock is incremented at the start, so it starts at 1 */
 		++clock;
@@ -620,7 +627,7 @@ static void *run(void *targ)
         }
         #endif
 
-
+        gettimeofday(&start_time, NULL);
 		if ((threadNo == 0)&&(!(clock % REPORT_FREQUENCY))) {
 			doReport(clock);
 			/* SDL display is also refreshed every REPORT_FREQUENCY */
@@ -650,6 +657,9 @@ static void *run(void *targ)
 			SDL_UpdateWindowSurface(window);
 #endif /* USE_SDL */
 		}
+        gettimeofday(&end_time,NULL);
+        report_usecs+=(end_time.tv_usec+1000000*end_time.tv_sec)-(start_time.tv_usec+start_time.tv_sec*1000000);
+
 
 		/* Introduce a random cell somewhere with a given energy level */
 		/* This is called seeding, and introduces both energy and
@@ -940,7 +950,8 @@ static void *run(void *targ)
 		}
 #endif /* USE_SDL */
 	}
-
+    printf("Report usecs used: %d\n", report_usecs);
+    printf("That is %d seconds\n", report_usecs/1000000);
 	return (void *)0;
 }
 
