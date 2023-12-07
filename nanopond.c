@@ -1110,12 +1110,12 @@ int main()
     #ifdef USE_PTHREADS_COUNT
     uint64_t total_insts = 0;
     for (int i=0;i<USE_PTHREADS_COUNT;i++) {
-        printf("Thread %d executed %d instructions\n",i,p_instruction_counts[i]);
+        printf("Thread %d executed %lu instructions\n",i,p_instruction_counts[i]);
         total_insts+=p_instruction_counts[i];
     }
-    printf("Total: %d\n", total_insts);
+    printf("Total: %lu\n", total_insts);
     #else
-    printf("Serial executed %d instructions\n", s_instruction_count);
+    printf("Serial executed %lu instructions\n", s_instruction_count);
     #endif
 	return 0;
 }
