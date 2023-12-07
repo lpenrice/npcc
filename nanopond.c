@@ -619,10 +619,11 @@ static void *run(void *targ)
      */
     gettimeofday(&end_time, NULL);
     setup_usecs+=(end_time.tv_usec+1000000*end_time.tv_sec)-(start_time.tv_usec+start_time.tv_sec*1000000);
-    
+
     int report_usecs = 0; 
     int seeding_usecs = 0;
-	/* Main loop */
+	int random_usecs = 0;
+    /* Main loop */
 	while (!exitNow) {
 
 		/* Increment clock and run reports periodically */
@@ -711,7 +712,8 @@ static void *run(void *targ)
         gettimeofday(&end_time,NULL);
         seeding_usecs+=(end_time.tv_usec+1000000*end_time.tv_sec)-(start_time.tv_usec+start_time.tv_sec*1000000);
 
-
+        // start timing the random cell and execution
+        gettimeofday(&start_time, NULL);
 		/* Pick a random cell to execute */
 		i = getRandom();
 		x = i % POND_SIZE_X;
@@ -742,6 +744,8 @@ static void *run(void *targ)
 		/* Keep track of how many cells have been executed */
 		statCounters.cellExecutions += 1.0;
 
+        gettimeofday(&end_time,NULL);
+        random_usecs+=(end_time.tv_usec+1000000*end_time.tv_sec)-(start_time.tv_usec+start_time.tv_sec*1000000);
 		/* Core execution loop */
 		while ((pptr->energy)&&(!stop)) {
 			/* Get the next instruction */
@@ -971,8 +975,8 @@ static void *run(void *targ)
     printf("That is %d seconds\n", setup_usecs/1000000);
     printf("Seeding usecs used: %d\n", seeding_usecs);
     printf("That is %d seconds\n", seeding_usecs/1000000);
-
-
+    printf("Random usecs used: %d\n", random_usecs);
+    printf("That is %d seconds\n", random_usecs/1000000);
     return (void *)0;
 }
 
