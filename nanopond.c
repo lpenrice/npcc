@@ -320,9 +320,6 @@ static const uintptr_t BITS_IN_FOURBIT_WORD[16] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,
 /*Set up instruction counting*/
 #ifdef USE_PTHREADS_COUNT
 int p_instruction_counts[USE_PTHREADS_COUNT];
-for (int i=0; i<USE_PTHREADS_COUNT;i++) {
-    p_instruction_counts[i]=0;
-}
 #else
 int s_instruction_count = 0;
 #endif
@@ -1022,7 +1019,8 @@ int main()
 	uintptr_t i,x,y;
 
 	/* Seed and init the random number generator */
-	prngState[0] = (uint64_t)time(NULL);
+	//prngState[0] = (uint64_t)time(NULL);
+    prngState[0]=(uint64_t)0;
 	srand(13);
 	prngState[1] = (uint64_t)rand();
 
@@ -1088,6 +1086,11 @@ int main()
 	}
 
 #ifdef USE_PTHREADS_COUNT
+    //Set up inst counting
+    for (int i=0; i<USE_PTHREADS_COUNT;i++) {
+        p_instruction_counts[i]=0;
+    }
+    
 	pthread_t threads[USE_PTHREADS_COUNT];
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
 		pthread_create(&threads[i],0,run,(void *)i);
@@ -1106,7 +1109,7 @@ int main()
 
     #ifdef USE_PTHREADS_COUNT
     int total_insts = 0;
-    for (int i=0;i<USE_PTHREADS_COUNT) {
+    for (int i=0;i<USE_PTHREADS_COUNT;i++) {
         printf("Thread %d executed %d instructions\n",i,p_instruction_counts[i]);
         total_insts+=p_instruction_counts[i];
     }
