@@ -623,6 +623,8 @@ static void *run(void *targ)
     int report_usecs = 0; 
     int seeding_usecs = 0;
 	int random_usecs = 0;
+    int execute_usecs = 0;
+    int splitting_usecs=0;
     /* Main loop */
 	while (!exitNow) {
 
@@ -746,6 +748,10 @@ static void *run(void *targ)
 
         gettimeofday(&end_time,NULL);
         random_usecs+=(end_time.tv_usec+1000000*end_time.tv_sec)-(start_time.tv_usec+start_time.tv_sec*1000000);
+
+        /* Start execution timer*/
+        gettimeofday(&start_time, NULL);
+
 		/* Core execution loop */
 		while ((pptr->energy)&&(!stop)) {
 			/* Get the next instruction */
@@ -918,11 +924,14 @@ static void *run(void *targ)
 			}
 		}
 
+        gettimeofday(&end_time,NULL);
+        execute_usecs+=(end_time.tv_usec+1000000*end_time.tv_sec)-(start_time.tv_usec+start_time.tv_sec*1000000);
 		/* Copy outputBuf into neighbor if access is permitted and there
 		 * is energy there to make something happen. There is no need
 		 * to copy to a cell with no energy, since anything copied there
 		 * would never be executed and then would be replaced with random
 		 * junk eventually. See the seeding code in the main loop above. */
+        gettimeofday(&start_time,NULL);
 		if ((outputBuf[0] & 0xff) != 0xff) {
 			tmpptr = getNeighbor(x,y,facing);
 #ifdef USE_PTHREADS_COUNT
@@ -945,6 +954,8 @@ static void *run(void *targ)
 			pthread_mutex_unlock(&(tmpptr->lock));
 #endif
 		}
+        gettimeofday(&end_time,NULL);
+        splitting_usecs+=(end_time.tv_usec+1000000*end_time.tv_sec)-(start_time.tv_usec+start_time.tv_sec*1000000);
 
 		/* Update the neighborhood on SDL screen to show any changes. */
 #ifdef USE_SDL
@@ -977,6 +988,10 @@ static void *run(void *targ)
     printf("That is %d seconds\n", seeding_usecs/1000000);
     printf("Random usecs used: %d\n", random_usecs);
     printf("That is %d seconds\n", random_usecs/1000000);
+    printf("Execute usecs used: %d\n", execute_usecs);
+    printf("That is %d seconds\n", execute_usecs/1000000);
+    printf("Cell Splitting usecs used: %d\n", splitting_usecs);
+    printf("That is %d seconds\n", splitting_usecs/1000000);
     return (void *)0;
 }
 
