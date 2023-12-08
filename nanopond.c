@@ -953,7 +953,7 @@ static void *run(void *targ)
  * @param argc Number of args
  * @param argv Argument array
  */
-int main()
+int main(int argc, char** argv)
 {
     int flags, opt;
     POND_SIZE_X = 800;
