@@ -258,11 +258,8 @@
 // #define USE_SDL 1
 
 /* Define this to use threads, and how many threads to create */
-<<<<<<< HEAD
-#define USE_PTHREADS_COUNT 8
-=======
 //#define USE_PTHREADS_COUNT 4
->>>>>>> dylan/threading
+
 
 /* ----------------------------------------------------------------------- */
 
@@ -354,7 +351,7 @@ struct Cell
 	uintptr_t genome[POND_DEPTH_SYSWORDS];
 
 #ifdef USE_PTHREADS_COUNT
-	pthread_mutex_t lock;
+//	pthread_mutex_t lock;
 #endif
 };
 
@@ -696,7 +693,7 @@ static void *run(void *targ)
 			pptr = &pond[x][y];
 
 #ifdef USE_PTHREADS_COUNT
-			pthread_mutex_lock(&(pptr->lock));
+//			pthread_mutex_lock(&(pptr->lock));
 #endif
 
 			pptr->ID = cellIdCounter;
@@ -718,7 +715,7 @@ static void *run(void *targ)
 #endif /* USE_SDL */
 
 #ifdef USE_PTHREADS_COUNT
-			pthread_mutex_unlock(&(pptr->lock));
+//			pthread_mutex_unlock(&(pptr->lock));
 #endif
 		}
 
@@ -912,7 +909,7 @@ static void *run(void *targ)
 						tmpptr = getNeighbor(x,y,facing);
 						if (accessAllowed(tmpptr,reg,1)) {
 #ifdef USE_PTHREADS_COUNT
-							pthread_mutex_lock(&(tmpptr->lock));
+//							pthread_mutex_lock(&(tmpptr->lock));
 #endif
 							if (tmpptr->generation > 2)
 								++statCounters.viableCellShares;
@@ -920,7 +917,7 @@ static void *run(void *targ)
 							tmpptr->energy = tmp / 2;
 							pptr->energy = tmp - tmpptr->energy;
 #ifdef USE_PTHREADS_COUNT
-							pthread_mutex_unlock(&(tmpptr->lock));
+//							pthread_mutex_unlock(&(tmpptr->lock));
 #endif
 						}
 						break;
@@ -952,7 +949,7 @@ static void *run(void *targ)
 		if ((outputBuf[0] & 0xff) != 0xff) {
 			tmpptr = getNeighbor(x,y,facing);
 #ifdef USE_PTHREADS_COUNT
-			pthread_mutex_lock(&(tmpptr->lock));
+//			pthread_mutex_lock(&(tmpptr->lock));
 #endif
 			if ((tmpptr->energy)&&accessAllowed(tmpptr,reg,0)) {
 				/* Log it if we're replacing a viable cell */
@@ -968,7 +965,7 @@ static void *run(void *targ)
 					tmpptr->genome[i] = outputBuf[i];
 			}
 #ifdef USE_PTHREADS_COUNT
-			pthread_mutex_unlock(&(tmpptr->lock));
+//			pthread_mutex_unlock(&(tmpptr->lock));
 #endif
 		}
         gettimeofday(&end_time,NULL);
@@ -1084,7 +1081,7 @@ int main()
 			for(i=0;i<POND_DEPTH_SYSWORDS;++i)
 				pond[x][y].genome[i] = ~((uintptr_t)0);
 #ifdef USE_PTHREADS_COUNT
-			pthread_mutex_init(&(pond[x][y].lock),0);
+//			pthread_mutex_init(&(pond[x][y].lock),0);
 #endif
 		}
 	}
