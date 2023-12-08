@@ -350,9 +350,9 @@ struct Cell
 	 * bit instructions packed into machine size words) */
 	uintptr_t genome[POND_DEPTH_SYSWORDS];
 
-#ifdef USE_PTHREADS_COUNT
+//#ifdef USE_PTHREADS_COUNT
 //	pthread_mutex_t lock;
-#endif
+//#endif
 };
 
 /* The pond is a 2D array of cells */
@@ -692,9 +692,9 @@ static void *run(void *targ)
 			y = getRandom() % POND_SIZE_Y;
 			pptr = &pond[x][y];
 
-#ifdef USE_PTHREADS_COUNT
+//#ifdef USE_PTHREADS_COUNT
 //			pthread_mutex_lock(&(pptr->lock));
-#endif
+//#endif
 
 			pptr->ID = cellIdCounter;
 			pptr->parentID = 0;
@@ -714,9 +714,9 @@ static void *run(void *targ)
 			((uint8_t *)screen->pixels)[x + (y * sdlPitch)] = getColor(pptr);
 #endif /* USE_SDL */
 
-#ifdef USE_PTHREADS_COUNT
+//#ifdef USE_PTHREADS_COUNT
 //			pthread_mutex_unlock(&(pptr->lock));
-#endif
+//#endif
 		}
 
         gettimeofday(&end_time,NULL);
@@ -908,17 +908,17 @@ static void *run(void *targ)
 					case 0xe: /* SHARE: Equalize energy between self and neighbor if allowed */
 						tmpptr = getNeighbor(x,y,facing);
 						if (accessAllowed(tmpptr,reg,1)) {
-#ifdef USE_PTHREADS_COUNT
+//#ifdef USE_PTHREADS_COUNT
 //							pthread_mutex_lock(&(tmpptr->lock));
-#endif
+//#endif
 							if (tmpptr->generation > 2)
 								++statCounters.viableCellShares;
 							tmp = pptr->energy + tmpptr->energy;
 							tmpptr->energy = tmp / 2;
 							pptr->energy = tmp - tmpptr->energy;
-#ifdef USE_PTHREADS_COUNT
+//#ifdef USE_PTHREADS_COUNT
 //							pthread_mutex_unlock(&(tmpptr->lock));
-#endif
+//#endif
 						}
 						break;
 					case 0xf: /* STOP: End execution */
@@ -948,9 +948,9 @@ static void *run(void *targ)
         gettimeofday(&start_time,NULL);
 		if ((outputBuf[0] & 0xff) != 0xff) {
 			tmpptr = getNeighbor(x,y,facing);
-#ifdef USE_PTHREADS_COUNT
+//#ifdef USE_PTHREADS_COUNT
 //			pthread_mutex_lock(&(tmpptr->lock));
-#endif
+//#endif
 			if ((tmpptr->energy)&&accessAllowed(tmpptr,reg,0)) {
 				/* Log it if we're replacing a viable cell */
 				if (tmpptr->generation > 2)
@@ -964,9 +964,9 @@ static void *run(void *targ)
 				for(i=0;i<POND_DEPTH_SYSWORDS;++i)
 					tmpptr->genome[i] = outputBuf[i];
 			}
-#ifdef USE_PTHREADS_COUNT
+//#ifdef USE_PTHREADS_COUNT
 //			pthread_mutex_unlock(&(tmpptr->lock));
-#endif
+//#endif
 		}
         gettimeofday(&end_time,NULL);
         splitting_usecs+=(end_time.tv_usec+1000000*end_time.tv_sec)-(start_time.tv_usec+start_time.tv_sec*1000000);
@@ -1080,9 +1080,9 @@ int main()
 			pond[x][y].energy = 0;
 			for(i=0;i<POND_DEPTH_SYSWORDS;++i)
 				pond[x][y].genome[i] = ~((uintptr_t)0);
-#ifdef USE_PTHREADS_COUNT
+//#ifdef USE_PTHREADS_COUNT
 //			pthread_mutex_init(&(pond[x][y].lock),0);
-#endif
+//#endif
 		}
 	}
 
