@@ -258,7 +258,11 @@
 // #define USE_SDL 1
 
 /* Define this to use threads, and how many threads to create */
+<<<<<<< HEAD
 #define USE_PTHREADS_COUNT 8
+=======
+//#define USE_PTHREADS_COUNT 4
+>>>>>>> dylan/threading
 
 /* ----------------------------------------------------------------------- */
 
@@ -316,6 +320,13 @@ static inline uintptr_t getRandom()
 
 /* Number of bits set in binary numbers 0000 through 1111 */
 static const uintptr_t BITS_IN_FOURBIT_WORD[16] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4 };
+
+/*Set up instruction counting*/
+#ifdef USE_PTHREADS_COUNT
+int p_instruction_counts[USE_PTHREADS_COUNT];
+#else
+int s_instruction_count = 0;
+#endif
 
 /**
  * Structure for a cell in the pond
@@ -754,6 +765,12 @@ static void *run(void *targ)
 
 		/* Core execution loop */
 		while ((pptr->energy)&&(!stop)) {
+            //Count number of instruction executions
+            #ifdef USE_PTHREADS_COUNT
+            p_instruction_counts[threadNo]++;
+            #else
+            s_instruction_count++;
+            #endif
 			/* Get the next instruction */
 			inst = (currentWord >> shiftPtr) & 0xf;
 
@@ -1006,8 +1023,9 @@ int main()
 	uintptr_t i,x,y;
 
 	/* Seed and init the random number generator */
-	prngState[0] = (uint64_t)time(NULL);
-	srand(time(NULL));
+	//prngState[0] = (uint64_t)time(NULL);
+    prngState[0]=(uint64_t)0;
+	srand(13);
 	prngState[1] = (uint64_t)rand();
 
 	/* Reset per-report stat counters */
@@ -1072,6 +1090,11 @@ int main()
 	}
 
 #ifdef USE_PTHREADS_COUNT
+    //Set up inst counting
+    for (int i=0; i<USE_PTHREADS_COUNT;i++) {
+        p_instruction_counts[i]=0;
+    }
+    
 	pthread_t threads[USE_PTHREADS_COUNT];
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
 		pthread_create(&threads[i],0,run,(void *)i);
@@ -1087,5 +1110,16 @@ int main()
 	SDL_DestroyWindow(window);
 #endif /* USE_SDL */
 
+
+    #ifdef USE_PTHREADS_COUNT
+    int total_insts = 0;
+    for (int i=0;i<USE_PTHREADS_COUNT;i++) {
+        printf("Thread %d executed %d instructions\n",i,p_instruction_counts[i]);
+        total_insts+=p_instruction_counts[i];
+    }
+    printf("Total: %d\n", total_insts);
+    #else
+    printf("Serial executed %d instructions\n", s_instruction_count);
+    #endif
 	return 0;
 }
