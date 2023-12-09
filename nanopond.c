@@ -268,6 +268,12 @@ uintptr_t POND_DEPTH;
  * from cells when they try to KILL a viable cell neighbor and
  * fail. Higher numbers mean lower penalties. */
 uintptr_t FAILED_KILL_PENALTY;
+
+/* Define this to use SDL. To use SDL, you must have SDL headers
+ *  * available and you must link with the SDL library when you compile. */
+/* Comment this out to compile without SDL visualization support. */
+// #define USE_SDL 1
+
 volatile uint64_t prngState[2];
 static inline uintptr_t getRandom()
 {
