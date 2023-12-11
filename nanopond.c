@@ -509,6 +509,34 @@ switch(dir) {
 }
 return &pond[x][y]; /* This should never be reached */
 }
+/*Take a number of threads and divide pond up evenly into that many partitons.
+ * Assumes partitionList is numThreads long
+ * Currently only implements 4 threads*/
+static inline void makePartitions(uint64_t numThreads, struct Partition *partitionList) {
+    if (numThreads !=4) {
+        printf("Only 4 threaded compiliation is currently implemented\n");
+        return;
+    }
+    partitionList[0].topLeft = &pond[0][0];
+    partitionList[0].width = POND_SIZE_X/2;
+    partitionList[0].height = POND_SIZE_Y/2;
+    partitionList[0].threadNo = 0;
+
+    partitionList[1].topLeft = &pond[POND_SIZE_X/2][0];
+    partitionList[1].width = POND_SIZE_X/2 + POND_SIZE_X%2;
+    partitionList[1].height = POND_SIZE_Y/2;
+    partitionList[1].threadNo = 1;
+
+    partitionList[2].topLeft = &pond[0][POND_SIZE_Y/2];
+    partitionList[2].width = POND_SIZE_X/2;
+    partitionList[2].height = POND_SIZE_Y/2 + POND_SIZE_Y%2;
+    partitionList[2].threadNo = 2;
+
+    partitionList[3].topLeft = &pond[POND_SIZE_X/2][POND_SIZE_Y/2];
+    partitionList[3].width = POND_SIZE_X/2 + POND_SIZE_X%2;
+    partitionList[3].height = POND_SIZE_Y/2 + POND_SIZE_Y%2;
+    partitionList[3].threadNo = 3;
+}
 
 static inline int accessAllowed(struct Cell *const c2,const uintptr_t c1guess,int sense)
 {
@@ -1159,7 +1187,7 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 #ifdef USE_PTHREADS_COUNT
     /*Create partitons for the threads*/
     struct Partition partitionList[USE_PTHREADS_COUNT];
-    makePartitions(USE_PTHREADS_COUNT, &partitionList);
+    makePartitions(USE_PTHREADS_COUNT, partitionList);
 
 	pthread_t threads[USE_PTHREADS_COUNT];
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
