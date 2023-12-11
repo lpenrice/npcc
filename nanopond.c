@@ -340,6 +340,18 @@ struct Cell
 #endif
 };
 
+struct Partition 
+{
+    /*Unique identifier for the thread assigned this partition*/
+    uint64_t threadNo;
+    /*Where in the pond this partition starts from*/
+    static struct Cell** topLeft;
+    /*Width of this partition*/
+    uint64_t width;
+    /*Height of this partition*/
+    uint64_t height;
+}
+
 /* The pond is a 2D array of cells */
 /*static struct Cell pond[POND_SIZE_X][POND_SIZE_Y] = 
  * malloc((POND_SIZE_X*POND_SIZE_Y)* sizeof(struct Cell)); */
@@ -1145,6 +1157,10 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 	}
 
 #ifdef USE_PTHREADS_COUNT
+    /*Create partitons for the threads*/
+    struct Partition partitionList[USE_PTHREADS_COUNT];
+    makePartitions(USE_PTHREADS_COUNT, &partitionList);
+
 	pthread_t threads[USE_PTHREADS_COUNT];
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
 		pthread_create(&threads[i],0,run,(void *)i);
