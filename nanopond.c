@@ -913,7 +913,7 @@ while (!exitNow) {
                     currentWord = pptr->genome[wordPtr];
                     break;
                 case 0xd: /* KILL: Blow away neighboring cell if allowed with penalty on failure */
-                    tmpptr = getNeighbor(x,y,facing);
+                    tmpptr = getNeighbor(globalx,globaly,facing);
                     if (accessAllowed(tmpptr,reg,0)) {
                         if (tmpptr->generation > 2)
                             ++statCounters.viableCellsKilled;
@@ -934,7 +934,7 @@ while (!exitNow) {
                     }
                     break;
                 case 0xe: /* SHARE: Equalize energy between self and neighbor if allowed */
-                    tmpptr = getNeighbor(x,y,facing);
+                    tmpptr = getNeighbor(globalx,globaly,facing);
                     if (accessAllowed(tmpptr,reg,1)) {
 #ifdef USE_PTHREADS_COUNT
                         pthread_mutex_lock(&(tmpptr->lock));
@@ -972,7 +972,7 @@ while (!exitNow) {
      * would never be executed and then would be replaced with random
      * junk eventually. See the seeding code in the main loop above. */
     if ((outputBuf[0] & 0xff) != 0xff) {
-        tmpptr = getNeighbor(x,y,facing);
+        tmpptr = getNeighbor(globalx,globaly,facing);
 #ifdef USE_PTHREADS_COUNT
         pthread_mutex_lock(&(tmpptr->lock));
 #endif
