@@ -606,7 +606,7 @@ return 0; /* Cells with no energy are black */
 
 volatile int exitNow = 0;
 
-static void *run(void *targ)
+static void *run(*struct Partition p)
 {
 const uintptr_t threadNo = (uintptr_t)targ;
 uintptr_t x,y,i;
@@ -1192,12 +1192,17 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 
 	pthread_t threads[USE_PTHREADS_COUNT];
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
-		pthread_create(&threads[i],0,run,(void *)i);
+		pthread_create(&threads[i],0,run, &partitionList[i]);
 	run((void *)0);
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
-		pthread_join(threads[i],(void **)0);
+		pthread_join(threads[i], (void**)0);
 #else
-	run((void *)0);
+    struct Partiton serialPartition;
+    serialPartition.topLeft = &pond[0][0];
+    serialPartition.width = POND_SIZE_X;
+    serialPartition.height = POND_SIZE_Y;
+    serialPartition.threadNo = 0;
+	run(&serialPartition);
 #endif
 
 #ifdef USE_SDL
