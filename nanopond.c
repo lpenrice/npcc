@@ -350,7 +350,7 @@ struct Partition
     uint64_t width;
     /*Height of this partition*/
     uint64_t height;
-}
+};
 
 /* The pond is a 2D array of cells */
 /*static struct Cell pond[POND_SIZE_X][POND_SIZE_Y] = 
