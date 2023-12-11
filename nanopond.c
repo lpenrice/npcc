@@ -494,6 +494,28 @@ if (cell->energy&&(cell->generation > 2)) {
 fprintf(file,"\n");
 }
 #endif
+
+static inline void globalCoord(uintptr_t x, uintptr_t y, uint64_t threadNo, uintptr_t *globals ) {
+    switch (threadNo) {
+        case 0:
+            globals[0] = x;
+            globals[1] = y;
+            break;
+        case 1:
+            globals[0] = x+(POND_SIZE_X/2);
+            globals[1] = y;
+            break;
+        case 2:
+            globals[0] = x;
+            globals[1] = y+(POND_SIZE_Y/2);
+            break;
+        case 3
+            globals[0] = x+(POND_SIZE_X/2);
+            globals[1] = y+(POND_SIZE_Y/2);
+            break;
+    }
+}
+
 static inline struct Cell *getNeighbor(const uintptr_t x,const uintptr_t y,const uintptr_t dir)
 {
 /* Space is toroidal; it wraps at edges */
@@ -702,6 +724,11 @@ while (!exitNow) {
     if (!(cycle % INFLOW_FREQUENCY)) {
         x = getRandom() % width;
         y = getRandom() % height;
+        uint64_t globals[2];
+        globalCoord(x,y,threadNo,globals);
+        globalx = globals[0];
+        globaly = globals[1];
+
         pptr = &topLeft[x][y];
 
 #ifdef USE_PTHREADS_COUNT
@@ -735,6 +762,12 @@ while (!exitNow) {
     i = getRandom();
     x = i % width;
     y = ((i / width) >> 1) % height;
+
+    uint64_t globals[2];
+    globalCoord(x,y,threadNo,globals);
+    globalx = globals[0];
+    globaly = globals[1];
+
     pptr = &topLeft[x][y];
 
     /* Reset the state of the VM prior to execution */
