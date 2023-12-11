@@ -608,7 +608,12 @@ volatile int exitNow = 0;
 
 static void *run(*struct Partition p)
 {
-const uintptr_t threadNo = (uintptr_t)targ;
+const uintptr_t threadNo = (uintptr_t)p->threadNo;
+uint64_t width = p->width;
+uint64_t height = p->height;
+struct Cell** topLeft = p->topLeft;
+
+
 uintptr_t x,y,i;
 uintptr_t cycle = 0;
 clock_t start, end;
