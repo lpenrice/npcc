@@ -750,7 +750,7 @@ while (!exitNow) {
     
         /* Update the random cell on SDL screen if viz is enabled */
 #ifdef USE_SDL
-        ((uint8_t *)screen->pixels)[x + (y * sdlPitch)] = getColor(pptr);
+        ((uint8_t *)screen->pixels)[globalx + (globaly * sdlPitch)] = getColor(pptr);
 #endif /* USE_SDL */
 
 #ifdef USE_PTHREADS_COUNT
