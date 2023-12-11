@@ -700,9 +700,9 @@ while (!exitNow) {
      * entropy into the substrate. This happens every INFLOW_FREQUENCY
      * cycle ticks. */
     if (!(cycle % INFLOW_FREQUENCY)) {
-        x = getRandom() % POND_SIZE_X;
-        y = getRandom() % POND_SIZE_Y;
-        pptr = &pond[x][y];
+        x = getRandom() % width;
+        y = getRandom() % height;
+        pptr = &topLeft[x][y];
 
 #ifdef USE_PTHREADS_COUNT
         pthread_mutex_lock(&(pptr->lock));
@@ -733,9 +733,9 @@ while (!exitNow) {
 
     /* Pick a random cell to execute */
     i = getRandom();
-    x = i % POND_SIZE_X;
-    y = ((i / POND_SIZE_X) >> 1) % POND_SIZE_Y;
-    pptr = &pond[x][y];
+    x = i % width;
+    y = ((i / width) >> 1) % height;
+    pptr = &topLeft[x][y];
 
     /* Reset the state of the VM prior to execution */
     for(i=0;i<POND_DEPTH_SYSWORDS;++i)
