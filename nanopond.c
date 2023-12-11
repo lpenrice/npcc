@@ -345,7 +345,7 @@ struct Partition
     /*Unique identifier for the thread assigned this partition*/
     uint64_t threadNo;
     /*Where in the pond this partition starts from*/
-    static struct Cell** topLeft;
+    struct Cell** topLeft;
     /*Width of this partition*/
     uint64_t width;
     /*Height of this partition*/
@@ -509,7 +509,7 @@ static inline void globalCoord(uintptr_t x, uintptr_t y, uint64_t threadNo, uint
             globals[0] = x;
             globals[1] = y+(POND_SIZE_Y/2);
             break;
-        case 3
+        case 3:
             globals[0] = x+(POND_SIZE_X/2);
             globals[1] = y+(POND_SIZE_Y/2);
             break;
@@ -628,7 +628,7 @@ return 0; /* Cells with no energy are black */
 
 volatile int exitNow = 0;
 
-static void *run(*struct Partition p)
+static void *run(struct Partition *p)
 {
 const uintptr_t threadNo = (uintptr_t)p->threadNo;
 uint64_t width = p->width;
@@ -724,10 +724,10 @@ while (!exitNow) {
     if (!(cycle % INFLOW_FREQUENCY)) {
         x = getRandom() % width;
         y = getRandom() % height;
-        uint64_t globals[2];
+        uintptr_t globals[2];
         globalCoord(x,y,threadNo,globals);
-        globalx = globals[0];
-        globaly = globals[1];
+        uintptr_t globalx = globals[0];
+        uintptr_t globaly = globals[1];
 
         pptr = &topLeft[x][y];
 
@@ -763,10 +763,10 @@ while (!exitNow) {
     x = i % width;
     y = ((i / width) >> 1) % height;
 
-    uint64_t globals[2];
+    uintptr_t globals[2];
     globalCoord(x,y,threadNo,globals);
-    globalx = globals[0];
-    globaly = globals[1];
+    uintptr_t globalx = globals[0];
+    uintptr_t globaly = globals[1];
 
     pptr = &topLeft[x][y];
 
