@@ -509,6 +509,7 @@ switch(dir) {
 }
 return &pond[x][y]; /* This should never be reached */
 }
+#ifdef USE_PTHREADS_COUNT
 /*Take a number of threads and divide pond up evenly into that many partitons.
  * Assumes partitionList is numThreads long
  * Currently only implements 4 threads*/
@@ -537,7 +538,7 @@ static inline void makePartitions(uint64_t numThreads, struct Partition *partiti
     partitionList[3].height = POND_SIZE_Y/2 + POND_SIZE_Y%2;
     partitionList[3].threadNo = 3;
 }
-
+#endif /*USE_PTHREADS_COUNT*/
 static inline int accessAllowed(struct Cell *const c2,const uintptr_t c1guess,int sense)
 {
 /* Access permission is more probable if they are more similar in sense 0,
