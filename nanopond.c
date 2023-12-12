@@ -531,15 +531,40 @@ switch(dir) {
 }
 return &pond[x][y]; /* This should never be reached */
 }
-#ifdef USE_PTHREADS_COUNT
-/*Take a number of threads and divide pond up evenly into that many partitons.
+/** Take a number of threads and divide pond up evenly into that many partitons.
  * Assumes partitionList is numThreads long
- * Currently only implements 4 threads*/
-static inline void makePartitions(uint64_t numThreads, struct Partition *partitionList) {
-    if (numThreads !=4) {
+ * Currently only implements 4 threads
+ * Returns: # partitions created, or -1 on an error
+ */
+
+static inline int makePartitions(struct Partition *partitionList) {
+    #ifdef USE_PTHREADS_COUNT
+    if (USE_PTHREADS_COUNT !=4) {
         printf("Only 4 threaded compiliation is currently implemented\n");
-        return;
+        return -1;
     }
+    #endif
+    
+    POND_DEPTH_SYSWORDS = (POND_DEPTH / (sizeof(uintptr_t) * 2));
+    int listLen;
+    #ifndef USE_PTHREADS_COUNT
+    //Create single threaded with only one partition encompassing whole board
+    partitionList[0].threadNo = 0;
+    partitionList[0].width = POND_SIZE_X;
+    partitionList[0].height = POND_SIZE_Y;
+    partitionList[0].topLeft = ((struct Cell**)calloc(POND_SIZE_X, sizeof(struct Cell*)));
+    //Allocate memory in the same way as pond
+    for(uintptr_t i = 0; i < POND_SIZE_X; i++){
+       partitionList[0].topLeft[i] = ((struct Cell*)calloc(POND_SIZE_Y, sizeof(struct Cell)));
+    }
+    for(uintptr_t i = 0; i < POND_SIZE_X; i++){
+        for(uintptr_t j = 0; j < POND_SIZE_Y; j++){
+            partitionList[0].topLeft[i][j].genome = (uintptr_t*)calloc(POND_DEPTH_SYSWORDS, sizeof(uintptr_t));
+        }
+    }
+    listLen=1;
+    #else
+    //Multithreaded partition setup
     partitionList[0].topLeft = pond;
     partitionList[0].width = POND_SIZE_X/2;
     partitionList[0].height = POND_SIZE_Y/2;
@@ -559,8 +584,53 @@ static inline void makePartitions(uint64_t numThreads, struct Partition *partiti
     partitionList[3].width = POND_SIZE_X/2 + POND_SIZE_X%2;
     partitionList[3].height = POND_SIZE_Y/2 + POND_SIZE_Y%2;
     partitionList[3].threadNo = 3;
+
+    for (int pN = 0; i<USE_PTHREADS_COUNT; i++) {
+        //Alloc first level array
+        partitionList[pN].topLeft = ((struct Cell**)calloc(partitionList[pN].width, sizeof(struct Cell*))); 
+        //Allocate second level array
+        for(uintptr_t i = 0; i < partitionList[pN].width; i++){
+            partitionList[pN].topLeft[i] = ((struct Cell*)calloc(partitionList[pN].height, sizeof(struct Cell)));
+            //Allocate genome
+            for(uintptr_t j = 0; j < POND_SIZE_Y; j++){
+                partitionList[pN].topLeft[i][j].genome = (uintptr_t*)calloc(POND_DEPTH_SYSWORDS, sizeof(uintptr_t));
+            }
+            
+        }
+
+        
+    }
+    listLen = USE_PTHREADS_COUNT;
+    #endif
+
+
+	/* Clear the pond and initialize all genomes
+    * We are using calloc so prob not neccesary. Keeping for parity with original
+	 * to 0xffff... */
+    for (int pN=0; pN<listLen; i++) {
+	    for(x=0;x<partitionList[pN].width;++x) {
+	    	for(y=0;y<partitionList[pN].height;++y) {
+	    		partitionList[pN].topLeft[x][y].ID = 0;
+	    		partitionList[pN].topLeft[x][y].parentID = 0;
+	    		partitionList[pN].topLeft[x][y].lineage = 0;
+	    		partitionList[pN].topLeft[x][y].generation = 0;
+	    		partitionList[pN].topLeft[x][y].energy = 0;
+	    		for(i=0;i<POND_DEPTH_SYSWORDS;++i){
+	    			partitionList[pN].topLeft[x][y].genome[i] = ~((uintptr_t)0);
+                }
+    #ifdef USE_PTHREADS_COUNT
+	    		pthread_mutex_init(&(partitionList[pN].topLeft[x][y].lock),0);
+    #endif
+	    	}
+	    }
+    }
+
+    return listLen;
+
+
+
+
 }
-#endif /*USE_PTHREADS_COUNT*/
 static inline int accessAllowed(struct Cell *const c2,const uintptr_t c1guess,int sense)
 {
 /* Access permission is more probable if they are more similar in sense 0,
@@ -1136,21 +1206,11 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
                 exit(EXIT_FAILURE);
         }
     }
-
-    POND_DEPTH_SYSWORDS = (POND_DEPTH / (sizeof(uintptr_t) * 2));
-    // genome = ((int*)calloc(POND_DEPTH_SYSWORDS, sizeof(int)));
-
-    pond = ((struct Cell**)calloc(POND_SIZE_X, sizeof(struct Cell*))); 
-    for(uintptr_t i = 0; i < POND_SIZE_X; i++){
-       pond[i] = ((struct Cell*)calloc(POND_SIZE_Y, sizeof(struct Cell)));
-    }
-
-    for(uintptr_t i = 0; i < POND_SIZE_X; i++){
-        for(uintptr_t j = 0; j < POND_SIZE_Y; j++){
-            //printf("%d\n", pond[i][j].ID);
-            pond[i][j].genome = (uintptr_t*)calloc(POND_DEPTH_SYSWORDS, sizeof(uintptr_t));
-        }
-    }
+    /* Allocate pond data inside partitions instead of in main
+    */
+    struct Partition partitionList[USE_PTHREADS_COUNT];
+    makePartitions(USE_PTHREADS_COUNT, partitionList);
+    
 
     // POND_DEPTH_SYSWORDS = (int*)calloc(POND_DEPTH / (sizeof(uintptr_t) * 2), sizeof(int));
     //int POND_SIZE_X = 800;
@@ -1204,29 +1264,9 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 		}
 	}
 #endif /* USE_SDL */
- 
-	/* Clear the pond and initialize all genomes
-	 * to 0xffff... */
-	for(x=0;x<POND_SIZE_X;++x) {
-		for(y=0;y<POND_SIZE_Y;++y) {
-			pond[x][y].ID = 0;
-			pond[x][y].parentID = 0;
-			pond[x][y].lineage = 0;
-			pond[x][y].generation = 0;
-			pond[x][y].energy = 0;
-			for(i=0;i<POND_DEPTH_SYSWORDS;++i){
-				pond[x][y].genome[i] = ~((uintptr_t)0);
-            }
-#ifdef USE_PTHREADS_COUNT
-			pthread_mutex_init(&(pond[x][y].lock),0);
-#endif
-		}
-	}
+/*Initialization moved into makePartitions*/ 
 
 #ifdef USE_PTHREADS_COUNT
-    /*Create partitons for the threads*/
-    struct Partition partitionList[USE_PTHREADS_COUNT];
-    makePartitions(USE_PTHREADS_COUNT, partitionList);
 
 	pthread_t threads[USE_PTHREADS_COUNT];
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
