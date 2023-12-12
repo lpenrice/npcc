@@ -1304,6 +1304,6 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 	SDL_DestroyWindow(window);
 #endif /* USE_SDL */
 
-    freePartitions(&partitionList);
+    freePartitions(partitionList);
 	return 0;
 }
