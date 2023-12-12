@@ -627,6 +627,27 @@ static inline int makePartitions(struct Partition *partitionList) {
 
 
 }
+
+void freePartitions(struct Partition *partitionList) {
+    uint64_t listLen;
+    #ifdef USE_PTHREADS_COUNT
+    listLen=USE_PTHREADS_COUNT;
+    #else
+    listLen=1;
+    #endif
+    //for every partition, free genome, free columns, free topLeft
+    for (uint64_t pN=0; pN<listLen; pN++) {
+        for(uintptr_t i = 0; i < partitionList[pN].width; i++){
+            //free all genomes in this col
+            for(uintptr_t j = 0; j < partitionList[pN].height; j++){
+                free(partitionList[pN].topLeft[i][j].genome);
+            }
+            free(partitionList[pN].topLeft[i]);
+        }
+        free(partitionList[pN].topLeft);
+    }
+}
+
 static inline int accessAllowed(struct Cell *const c2,const uintptr_t c1guess,int sense)
 {
 /* Access permission is more probable if they are more similar in sense 0,
@@ -1282,14 +1303,7 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 	SDL_FreeSurface(screen);
 	SDL_DestroyWindow(window);
 #endif /* USE_SDL */
-    for(uintptr_t x = 0; x < POND_SIZE_X; x ++){
-       for(uintptr_t y = 0; y < POND_SIZE_Y; y++){
-           free(pond[x][y].genome);
-       }
-    }
-    for(uintptr_t i = 0; i < POND_SIZE_X; i++){
-        free(pond[i]);
-    }
-    free(pond);
+
+    freePartitions(&partitionList);
 	return 0;
 }
