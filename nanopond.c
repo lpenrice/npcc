@@ -1236,7 +1236,7 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 		pthread_join(threads[i], (void**)0);
 #else
     struct Partition serialPartition;
-    serialPartition.topLeft = &pond[0][0];
+    serialPartition.topLeft = pond;
     serialPartition.width = POND_SIZE_X;
     serialPartition.height = POND_SIZE_Y;
     serialPartition.threadNo = 0;
