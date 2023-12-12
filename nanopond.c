@@ -540,12 +540,12 @@ static inline void makePartitions(uint64_t numThreads, struct Partition *partiti
         printf("Only 4 threaded compiliation is currently implemented\n");
         return;
     }
-    partitionList[0].topLeft = &pond[0][0];
+    partitionList[0].topLeft = pond;
     partitionList[0].width = POND_SIZE_X/2;
     partitionList[0].height = POND_SIZE_Y/2;
     partitionList[0].threadNo = 0;
 
-    partitionList[1].topLeft = &pond[POND_SIZE_X/2][0];
+    partitionList[1].topLeft = &pond[POND_SIZE_X/2];
     partitionList[1].width = POND_SIZE_X/2 + POND_SIZE_X%2;
     partitionList[1].height = POND_SIZE_Y/2;
     partitionList[1].threadNo = 1;
