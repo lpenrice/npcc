@@ -1208,8 +1208,12 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
     }
     /* Allocate pond data inside partitions instead of in main
     */
+    #ifdef USE_PTHREADS_COUNT
     struct Partition partitionList[USE_PTHREADS_COUNT];
-    makePartitions(USE_PTHREADS_COUNT, partitionList);
+    #else
+    struct Partition partitionList[1];
+    #endif
+    makePartitions(partitionList);
     
 
     // POND_DEPTH_SYSWORDS = (int*)calloc(POND_DEPTH / (sizeof(uintptr_t) * 2), sizeof(int));
@@ -1271,16 +1275,11 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 	pthread_t threads[USE_PTHREADS_COUNT];
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
 		pthread_create(&threads[i],0,run, &partitionList[i]);
-	run((void *)0);
+	run(&partitionList[0]);
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
 		pthread_join(threads[i], (void**)0);
 #else
-    struct Partition serialPartition;
-    serialPartition.topLeft = pond;
-    serialPartition.width = POND_SIZE_X;
-    serialPartition.height = POND_SIZE_Y;
-    serialPartition.threadNo = 0;
-	run(&serialPartition);
+	run(&partitionList[0]);
 #endif
 
 #ifdef USE_SDL
