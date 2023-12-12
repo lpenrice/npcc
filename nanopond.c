@@ -546,7 +546,7 @@ static inline int makePartitions(struct Partition *partitionList) {
     #endif
     
     POND_DEPTH_SYSWORDS = (POND_DEPTH / (sizeof(uintptr_t) * 2));
-    int listLen;
+    uint64_t listLen;
     #ifndef USE_PTHREADS_COUNT
     //Create single threaded with only one partition encompassing whole board
     partitionList[0].threadNo = 0;
@@ -565,27 +565,23 @@ static inline int makePartitions(struct Partition *partitionList) {
     listLen=1;
     #else
     //Multithreaded partition setup
-    partitionList[0].topLeft = pond;
     partitionList[0].width = POND_SIZE_X/2;
     partitionList[0].height = POND_SIZE_Y/2;
     partitionList[0].threadNo = 0;
 
-    partitionList[1].topLeft = &pond[POND_SIZE_X/2];
     partitionList[1].width = POND_SIZE_X/2 + POND_SIZE_X%2;
     partitionList[1].height = POND_SIZE_Y/2;
     partitionList[1].threadNo = 1;
 
-    partitionList[2].topLeft = &pond[0][POND_SIZE_Y/2];
     partitionList[2].width = POND_SIZE_X/2;
     partitionList[2].height = POND_SIZE_Y/2 + POND_SIZE_Y%2;
     partitionList[2].threadNo = 2;
 
-    partitionList[3].topLeft = &pond[POND_SIZE_X/2][POND_SIZE_Y/2];
     partitionList[3].width = POND_SIZE_X/2 + POND_SIZE_X%2;
     partitionList[3].height = POND_SIZE_Y/2 + POND_SIZE_Y%2;
     partitionList[3].threadNo = 3;
 
-    for (int pN = 0; i<USE_PTHREADS_COUNT; i++) {
+    for (int pN = 0; pN<USE_PTHREADS_COUNT; pN++) {
         //Alloc first level array
         partitionList[pN].topLeft = ((struct Cell**)calloc(partitionList[pN].width, sizeof(struct Cell*))); 
         //Allocate second level array
@@ -607,15 +603,15 @@ static inline int makePartitions(struct Partition *partitionList) {
 	/* Clear the pond and initialize all genomes
     * We are using calloc so prob not neccesary. Keeping for parity with original
 	 * to 0xffff... */
-    for (int pN=0; pN<listLen; i++) {
-	    for(x=0;x<partitionList[pN].width;++x) {
-	    	for(y=0;y<partitionList[pN].height;++y) {
+    for (uint64_t pN=0; pN<listLen; pN++) {
+	    for(uint64_t x=0;x<partitionList[pN].width;++x) {
+	    	for(uint64_t y=0;y<partitionList[pN].height;++y) {
 	    		partitionList[pN].topLeft[x][y].ID = 0;
 	    		partitionList[pN].topLeft[x][y].parentID = 0;
 	    		partitionList[pN].topLeft[x][y].lineage = 0;
 	    		partitionList[pN].topLeft[x][y].generation = 0;
 	    		partitionList[pN].topLeft[x][y].energy = 0;
-	    		for(i=0;i<POND_DEPTH_SYSWORDS;++i){
+	    		for(uint64_t i=0;i<POND_DEPTH_SYSWORDS;++i){
 	    			partitionList[pN].topLeft[x][y].genome[i] = ~((uintptr_t)0);
                 }
     #ifdef USE_PTHREADS_COUNT
