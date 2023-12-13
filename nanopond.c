@@ -350,6 +350,11 @@ struct Partition
     uint64_t width;
     /*Height of this partition*/
     uint64_t height;
+    /*Pointers to neighbors*/
+    struct Partition* lNeighbor;
+    struct Partition* rNeighbor;
+    struct Partition* uNeighbor;
+    struct Partition* dNeighbor;
 };
 
 /* The pond is a 2D array of cells */
@@ -516,20 +521,20 @@ static inline void globalCoord(uintptr_t x, uintptr_t y, uint64_t threadNo, uint
     }
 }
 
-static inline struct Cell *getNeighbor(const uintptr_t x,const uintptr_t y,const uintptr_t dir)
+static inline struct Cell *getNeighbor(const uintptr_t x,const uintptr_t y,const uintptr_t dir, struct Partition *curP)
 {
 /* Space is toroidal; it wraps at edges */
 switch(dir) {
     case N_LEFT:
-        return (x) ? &pond[x-1][y] : &pond[POND_SIZE_X-1][y];
+        return (x) ? &curP->topLeft[x-1][y] : &curP->lNeighbor->topLeft[POND_SIZE_X-1][y];
     case N_RIGHT:
-        return (x < (POND_SIZE_X-1)) ? &pond[x+1][y] : &pond[0][y];
+        return (x < (POND_SIZE_X-1)) ? &curP->topLeft[x+1][y] : &curP->rNeighbor->topLeft[0][y];
     case N_UP:
-        return (y) ? &pond[x][y-1] : &pond[x][POND_SIZE_Y-1];
+        return (y) ? &curP->topLeft[x][y-1] : &curP->uNeighbor->topLeft[x][POND_SIZE_Y-1];
     case N_DOWN:
-        return (y < (POND_SIZE_Y-1)) ? &pond[x][y+1] : &pond[x][0];
+        return (y < (POND_SIZE_Y-1)) ? &curP->topLeft[x][y+1] : &curP->dNeighbor->topLeft[x][0];
 }
-return &pond[x][y]; /* This should never be reached */
+return &curP.topLeft[x][y]; /* This should never be reached */
 }
 /** Take a number of threads and divide pond up evenly into that many partitons.
  * Assumes partitionList is numThreads long
@@ -553,6 +558,10 @@ static inline int makePartitions(struct Partition *partitionList) {
     partitionList[0].width = POND_SIZE_X;
     partitionList[0].height = POND_SIZE_Y;
     partitionList[0].topLeft = ((struct Cell**)calloc(POND_SIZE_X, sizeof(struct Cell*)));
+    partitionList[0].lNeighbor = &partitionList[0];
+    partitionList[0].rNeighbor = &partitionList[0];
+    partitionList[0].uNeighbor = &partitionList[0];
+    partitionList[0].dNeighbor = &partitionList[0];
     //Allocate memory in the same way as pond
     for(uintptr_t i = 0; i < POND_SIZE_X; i++){
        partitionList[0].topLeft[i] = ((struct Cell*)calloc(POND_SIZE_Y, sizeof(struct Cell)));
@@ -568,18 +577,34 @@ static inline int makePartitions(struct Partition *partitionList) {
     partitionList[0].width = POND_SIZE_X/2;
     partitionList[0].height = POND_SIZE_Y/2;
     partitionList[0].threadNo = 0;
+    partitionList[0].lNeighbor = &partitionList[1];
+    partitionList[0].rNeighbor = &partitionList[1];
+    partitionList[0].uNeighbor = &partitionList[2];
+    partitionList[0].dNeighbor = &partitionList[2];
 
     partitionList[1].width = POND_SIZE_X/2 + POND_SIZE_X%2;
     partitionList[1].height = POND_SIZE_Y/2;
     partitionList[1].threadNo = 1;
+    partitionList[1].lNeighbor = &partitionList[0];
+    partitionList[1].rNeighbor = &partitionList[0];
+    partitionList[1].uNeighbor = &partitionList[3];
+    partitionList[1].dNeighbor = &partitionList[3];
 
     partitionList[2].width = POND_SIZE_X/2;
     partitionList[2].height = POND_SIZE_Y/2 + POND_SIZE_Y%2;
     partitionList[2].threadNo = 2;
+    partitionList[2].lNeighbor = &partitionList[3];
+    partitionList[2].rNeighbor = &partitionList[3];
+    partitionList[2].uNeighbor = &partitionList[0];
+    partitionList[2].dNeighbor = &partitionList[0];
 
     partitionList[3].width = POND_SIZE_X/2 + POND_SIZE_X%2;
     partitionList[3].height = POND_SIZE_Y/2 + POND_SIZE_Y%2;
     partitionList[3].threadNo = 3;
+    partitionList[3].lNeighbor = &partitionList[2];
+    partitionList[3].rNeighbor = &partitionList[2];
+    partitionList[3].uNeighbor = &partitionList[1];
+    partitionList[3].dNeighbor = &partitionList[1];
 
     for (int pN = 0; pN<USE_PTHREADS_COUNT; pN++) {
         //Alloc first level array
