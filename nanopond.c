@@ -534,7 +534,7 @@ switch(dir) {
     case N_DOWN:
         return (y < (POND_SIZE_Y-1)) ? &curP->topLeft[x][y+1] : &curP->dNeighbor->topLeft[x][0];
 }
-return &curP.topLeft[x][y]; /* This should never be reached */
+return &curP->topLeft[x][y]; /* This should never be reached */
 }
 /** Take a number of threads and divide pond up evenly into that many partitons.
  * Assumes partitionList is numThreads long
