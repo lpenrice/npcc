@@ -352,6 +352,8 @@ struct Cell
 #ifdef USE_PTHREADS_COUNT
 	pthread_mutex_t lock;
 #endif
+
+    volatile uint64_t dead[1000];
 };
 
 /* The pond is a 2D array of cells */
