@@ -360,10 +360,11 @@ struct Partition
 /* The pond is a 2D array of cells */
 /*static struct Cell pond[POND_SIZE_X][POND_SIZE_Y] = 
  * malloc((POND_SIZE_X*POND_SIZE_Y)* sizeof(struct Cell)); */
-static struct Cell** pond; /*= ((struct Cell**)calloc(POND_SIZE_X, sizeof(struct Cell*)));
+static struct Cell** globalpond; /*= ((struct Cell**)calloc(POND_SIZE_X, sizeof(struct Cell*)));
 
 for(int i = 0; i < POND_SIZE_X; i++){
     pond[i] = (struct Cell*)calloc(POND_SIZE_Y, sizeof(struct Cell));
+
 }*/
 /* This is used to generate unique cell IDs */
 static volatile uint64_t cellIdCounter = 0;
@@ -740,6 +741,9 @@ return 0; /* Cells with no energy are black */
 
 volatile int exitNow = 0;
 
+/** Array of booleans to keep track of which threads are done */
+uint8_t threadComplete[USE_PTHREADS_COUNT];
+
 static void *run(struct Partition *p)
 {
 const uintptr_t threadNo = (uintptr_t)p->threadNo;
@@ -795,38 +799,21 @@ while (!exitNow) {
     /* Increment cycle and run reports periodically */
     /* Clock is incremented at the start, so it starts at 1 */
     ++cycle;
-    if ((threadNo == 0)&&(!(cycle % REPORT_FREQUENCY))) {
-        doReport(cycle);
-        /* SDL display is also refreshed every REPORT_FREQUENCY */
-#ifdef USE_SDL
-        while (SDL_PollEvent(&sdlEvent)) {
-            if (sdlEvent.type == SDL_QUIT) {
-                fprintf(stderr,"[QUIT] Quit signal received!\n");
-                exitNow = 1;
-            } else if (sdlEvent.type == SDL_MOUSEBUTTONDOWN) {
-                switch (sdlEvent.button.button) {
-                    case SDL_BUTTON_LEFT:
-                        fprintf(stderr,"[INTERFACE] Genome of cell at (%d, %d):\n",sdlEvent.button.x, sdlEvent.button.y);
-                        dumpCell(stderr, &pond[sdlEvent.button.x][sdlEvent.button.y]);
-                        break;
-                    case SDL_BUTTON_RIGHT:
-                        colorScheme = (colorScheme + 1) % MAX_COLOR_SCHEME;
-                        fprintf(stderr,"[INTERFACE] Switching to color scheme \"%s\".\n",colorSchemeName[colorScheme]);
-                        for (y=0;y<POND_SIZE_Y;++y) {
-                            for (x=0;x<POND_SIZE_X;++x)
-                                ((uint8_t *)screen->pixels)[x + (y * sdlPitch)] = getColor(&pond[x][y]);
-                        }
-                        break;
+    if ((!(cycle % REPORT_FREQUENCY))) {
+        threadComplete[threadNo] = 1;
+        uint8_t allDone = USE_PTHREADS_COUNT;
+        while(allDone>0){
+            for(int i=0; i<USE_PTHREADS_COUNT; i++){
+                if(threadComplete[i]){
+                    allDone--;
                 }
             }
         }
-        SDL_BlitSurface(screen, NULL, winsurf, NULL);
-        SDL_UpdateWindowSurface(window);
-#endif /* USE_SDL */
-        end=clock();
-        if((cycle >= MAX_CLOCK) || ((( (uintptr_t)( (end-start)/CLOCKS_PER_SEC) ) >= MAX_SECONDS) && ((int)MAX_SECONDS!=-1))) {
-            exitNow = 1;
-        }
+        /** all threads finished if we've gotten to this point */
+        
+        /** NOW WE COPY MEMORY BUT DONT ASK ME HOW */
+        
+        threadComplete[threadNo] = 0;
     }
 
     /* Introduce a random cell somewhere with a given energy level */
@@ -1248,6 +1235,20 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
                 exit(EXIT_FAILURE);
         }
     }
+
+    /** Setup global snapshot pond */
+    globalpond = ((struct Cell**)calloc(POND_SIZE_X, sizeof(struct Cell*))); 
+    for(uintptr_t i = 0; i < POND_SIZE_X; i++){
+       globalpond[i] = ((struct Cell*)calloc(POND_SIZE_Y, sizeof(struct Cell)));
+    }
+
+    for(uintptr_t i = 0; i < POND_SIZE_X; i++){
+        for(uintptr_t j = 0; j < POND_SIZE_Y; j++){
+            //printf("%d\n", globalpond[i][j].ID);
+            globalpond[i][j].genome = (uintptr_t*)calloc(POND_DEPTH_SYSWORDS, sizeof(uintptr_t));
+        }
+    }
+
     /* Allocate pond data inside partitions instead of in main
     */
     #ifdef USE_PTHREADS_COUNT
@@ -1316,8 +1317,10 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 
 	pthread_t threads[USE_PTHREADS_COUNT];
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
-		pthread_create(&threads[i],0,run, &partitionList[i]);
-	run(&partitionList[0]);
+        threadComplete[i] = 0;
+        pthread_create(&threads[i],0,run, &partitionList[i]);
+	threadComplete[0] = 0;
+    run(&partitionList[0]);
 	for(i=1;i<USE_PTHREADS_COUNT;++i)
 		pthread_join(threads[i], (void**)0);
 #else
