@@ -739,6 +739,36 @@ return 0; /* Cells with no energy are black */
 }
 #endif
 
+/** Copy memory from partition into global pond */
+static inline void copyMem(struct Partition *p){
+    uint64_t xOffset = 0;
+    uint64_t yOffset = 0;
+    switch(p->threadNo){
+        case 0:
+            break;
+        case 1:
+            xOffset = POND_SIZE_X/2;
+            break;
+        case 2:
+            yOffset = POND_SIZE_Y/2;
+            break;
+        case 3:
+            xOffset = POND_SIZE_X/2;
+            yOffset = POND_SIZE_Y/2;
+            break;
+    }
+    for(int x=0; x<p->width; x++){
+        for(int y=0; y<p->height; y++){
+            memcpy(globalpond[x+xOffset][y+yOffset]->genome, p->topLeft[x][y]->genome, sizeof(uintptr_t)*POND_DEPTH_SYSWORDS);
+            globalpond[x+xOffset][y+yOffset]->ID = p->topLeft[x][y]->ID;
+            globalpond[x+xOffset][y+yOffset]->parentID = p->topLeft[x][y]->parentID;
+            globalpond[x+xOffset][y+yOffset]->lineage = p->topLeft[x][y]->lineage;
+            globalpond[x+xOffset][y+yOffset]->generation = p->topLeft[x][y]->generation;
+            globalpond[x+xOffset][y+yOffset]->energy = p->topLeft[x][y]->energy;
+        }
+    }
+}
+
 volatile int exitNow = 0;
 
 /** Array of booleans to keep track of which threads are done */
