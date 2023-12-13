@@ -1078,8 +1078,8 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 	uintptr_t i,x,y;
     //const int POND_SIZE_X = 800;
 	/* Seed and init the random number generator */
-	prngState[0] = (uint64_t)time(NULL);
-	srand(time(NULL));
+	prngState[0] = (uint64_t)0;
+	srand(13);
 	prngState[1] = (uint64_t)rand();
 
 	/* Reset per-report stat counters */
