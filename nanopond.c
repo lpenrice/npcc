@@ -353,7 +353,7 @@ struct Cell
 	pthread_mutex_t lock;
 #endif
 
-    volatile uint64_t dead[1000];
+    volatile uint64_t dead[400];
 };
 
 /* The pond is a 2D array of cells */
