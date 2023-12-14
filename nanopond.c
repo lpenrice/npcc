@@ -511,13 +511,13 @@ static inline struct Cell *getNeighbor(const uintptr_t x,const uintptr_t y,const
 /* Space is toroidal; it wraps at edges */
 switch(dir) {
     case N_LEFT:
-        return (x) ? &curP->topLeft[x-1][y] : &curP->lNeighbor->topLeft[POND_SIZE_X-1][y];
+        return (x) ? &curP->topLeft[x-1][y] : &curP->lNeighbor->topLeft[curP->lNeighbor->width-1][y];
     case N_RIGHT:
-        return (x < (POND_SIZE_X-1)) ? &curP->topLeft[x+1][y] : &curP->rNeighbor->topLeft[0][y];
+        return (x < ( curP->width -1)) ? &curP->topLeft[x+1][y] : &curP->rNeighbor->topLeft[0][y];
     case N_UP:
-        return (y) ? &curP->topLeft[x][y-1] : &curP->uNeighbor->topLeft[x][POND_SIZE_Y-1];
+        return (y) ? &curP->topLeft[x][y-1] : &curP->uNeighbor->topLeft[x][curP->uNeighbor->height-1];
     case N_DOWN:
-        return (y < (POND_SIZE_Y-1)) ? &curP->topLeft[x][y+1] : &curP->dNeighbor->topLeft[x][0];
+        return (y < (curP->height -1)) ? &curP->topLeft[x][y+1] : &curP->dNeighbor->topLeft[x][0];
 }
 return &curP->topLeft[x][y]; /* This should never be reached */
 }
