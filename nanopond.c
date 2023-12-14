@@ -214,9 +214,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#ifdef USE_PTHREADS_COUNT
 #include <pthread.h>
-#endif
 
 #ifdef USE_SDL
 #ifdef _MSC_VER
@@ -746,13 +744,19 @@ return 0; /* Cells with no energy are black */
 #endif
 
 uintptr_t globalcycle = 0;
+/** Array of booleans to keep track of which threads are done */
+#ifdef USE_PTHREADS_COUNT
+uint8_t threadComplete[USE_PTHREADS_COUNT];
+#else
+uint8_t threadComplete[1];
+#endif
 
 /** Add a thread whose sole purpose is to do the reporting */
 static void runReporting(){ 
         uint8_t allDone = numThreads;
         while(allDone>0){
             allDone = numThreads;
-            for(int i=0; i<numThreads; i++){
+            for(uint64_t i=0; i<numThreads; i++){
                 if(threadComplete[i]){
                     allDone--;
                 }
@@ -761,7 +765,7 @@ static void runReporting(){
         allDone = numThreads;
         while(allDone>0){
             allDone = numThreads;
-            for(int i=0; i<numThreads; i++){
+            for(uint i=0; i<numThreads; i++){
                 if(!threadComplete[i]){
                     allDone--;
                 }
@@ -788,22 +792,20 @@ static inline void copyMem(struct Partition *p){
             yOffset = POND_SIZE_Y/2;
             break;
     }
-    for(int x=0; x<p->width; x++){
-        for(int y=0; y<p->height; y++){
-            memcpy(globalpond[x+xOffset][y+yOffset]->genome, p->topLeft[x][y]->genome, sizeof(uintptr_t)*POND_DEPTH_SYSWORDS);
-            globalpond[x+xOffset][y+yOffset]->ID = p->topLeft[x][y]->ID;
-            globalpond[x+xOffset][y+yOffset]->parentID = p->topLeft[x][y]->parentID;
-            globalpond[x+xOffset][y+yOffset]->lineage = p->topLeft[x][y]->lineage;
-            globalpond[x+xOffset][y+yOffset]->generation = p->topLeft[x][y]->generation;
-            globalpond[x+xOffset][y+yOffset]->energy = p->topLeft[x][y]->energy;
+    for(uint64_t x=0; x<p->width; x++){
+        for(uint64_t y=0; y<p->height; y++){
+            memcpy(globalpond[x+xOffset][y+yOffset].genome, p->topLeft[x][y].genome, sizeof(uintptr_t)*POND_DEPTH_SYSWORDS);
+            globalpond[x+xOffset][y+yOffset].ID = p->topLeft[x][y].ID;
+            globalpond[x+xOffset][y+yOffset].parentID = p->topLeft[x][y].parentID;
+            globalpond[x+xOffset][y+yOffset].lineage = p->topLeft[x][y].lineage;
+            globalpond[x+xOffset][y+yOffset].generation = p->topLeft[x][y].generation;
+            globalpond[x+xOffset][y+yOffset].energy = p->topLeft[x][y].energy;
         }
     }
 }
 
 volatile int exitNow = 0;
 
-/** Array of booleans to keep track of which threads are done */
-uint8_t threadComplete[numThreads];
 
 static void *run(struct Partition *p)
 {
@@ -815,8 +817,8 @@ struct Cell** topLeft = p->topLeft;
 
 uintptr_t x,y,i;
 uintptr_t cycle = 0;
-clock_t start, end;
-start=clock();
+//start_t start,end;
+//start=clock();
 /* Buffer used for execution output of candidate offspring */
 uintptr_t outputBuf[POND_DEPTH_SYSWORDS];
 
@@ -868,7 +870,7 @@ while (!exitNow) {
         uint8_t allDone = numThreads;
         while(allDone>0){
             allDone = numThreads;
-            for(int i=0; i<numThreads; i++){
+            for(uint64_t i=0; i<numThreads; i++){
                 if(threadComplete[i]){
                     allDone--;
                 }
@@ -888,10 +890,12 @@ while (!exitNow) {
     if (!(cycle % INFLOW_FREQUENCY)) {
         x = getRandom() % width;
         y = getRandom() % height;
+        /*
         uintptr_t globals[2];
         globalCoord(x,y,threadNo,globals);
         uintptr_t globalx = globals[0];
         uintptr_t globaly = globals[1];
+        */
 
         pptr = &topLeft[x][y];
 
@@ -1077,7 +1081,7 @@ while (!exitNow) {
                     currentWord = pptr->genome[wordPtr];
                     break;
                 case 0xd: /* KILL: Blow away neighboring cell if allowed with penalty on failure */
-                    tmpptr = getNeighbor(globalx,globaly,facing);
+                    tmpptr = getNeighbor(globalx,globaly,facing,p);
                     if (accessAllowed(tmpptr,reg,0)) {
                         if (tmpptr->generation > 2)
                             ++statCounters.viableCellsKilled;
@@ -1098,7 +1102,7 @@ while (!exitNow) {
                     }
                     break;
                 case 0xe: /* SHARE: Equalize energy between self and neighbor if allowed */
-                    tmpptr = getNeighbor(globalx,globaly,facing);
+                    tmpptr = getNeighbor(globalx,globaly,facing,p);
                     if (accessAllowed(tmpptr,reg,1)) {
 #ifdef USE_PTHREADS_COUNT
                         pthread_mutex_lock(&(tmpptr->lock));
@@ -1136,7 +1140,7 @@ while (!exitNow) {
      * would never be executed and then would be replaced with random
      * junk eventually. See the seeding code in the main loop above. */
     if ((outputBuf[0] & 0xff) != 0xff) {
-        tmpptr = getNeighbor(globalx,globaly,facing);
+        tmpptr = getNeighbor(globalx,globaly,facing, p);
 #ifdef USE_PTHREADS_COUNT
         pthread_mutex_lock(&(tmpptr->lock));
 #endif
@@ -1182,7 +1186,7 @@ while (!exitNow) {
 #endif /* USE_SDL */
 }
 
-return (void *)0;
+ueturn (void *)0;
 }
 
 /**
@@ -1326,7 +1330,7 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 
     // POND_DEPTH_SYSWORDS = (int*)calloc(POND_DEPTH / (sizeof(uintptr_t) * 2), sizeof(int));
     //int POND_SIZE_X = 800;
-	uintptr_t i,x,y;
+	uintptr_t x;
     //const int POND_SIZE_X = 800;
 	/* Seed and init the random number generator */
 	prngState[0] = (uint64_t)time(NULL);
