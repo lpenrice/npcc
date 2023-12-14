@@ -274,6 +274,12 @@ uintptr_t FAILED_KILL_PENALTY;
 /* Comment this out to compile without SDL visualization support. */
 // #define USE_SDL 1
 
+#ifndef USE_PTHREADS_COUNT
+uint64_t numThreads = 1;
+#else
+uint64_t numThreads = USE_PTHREADS_COUNT;
+#endif
+
 volatile uint64_t prngState[2];
 static inline uintptr_t getRandom()
 {
@@ -410,7 +416,7 @@ static void doReport(const uint64_t cycle)
 	
 	for(x=0;x<POND_SIZE_X;++x) {
 		for(y=0;y<POND_SIZE_Y;++y) {
-			struct Cell *const c = &pond[x][y];
+			struct Cell *const c = &globalpond[x][y];
 			if (c->energy) {
 				++totalActiveCells;
 				totalEnergy += (uint64_t)c->energy;
@@ -739,6 +745,31 @@ return 0; /* Cells with no energy are black */
 }
 #endif
 
+uintptr_t globalcycle = 0;
+
+/** Add a thread whose sole purpose is to do the reporting */
+static void runReporting(){ 
+        uint8_t allDone = numThreads;
+        while(allDone>0){
+            allDone = numThreads;
+            for(int i=0; i<numThreads; i++){
+                if(threadComplete[i]){
+                    allDone--;
+                }
+            }
+        }
+        allDone = numThreads;
+        while(allDone>0){
+            allDone = numThreads;
+            for(int i=0; i<numThreads; i++){
+                if(!threadComplete[i]){
+                    allDone--;
+                }
+            }
+        }
+        doReport(globalcycle);
+}
+
 /** Copy memory from partition into global pond */
 static inline void copyMem(struct Partition *p){
     uint64_t xOffset = 0;
@@ -772,7 +803,7 @@ static inline void copyMem(struct Partition *p){
 volatile int exitNow = 0;
 
 /** Array of booleans to keep track of which threads are done */
-uint8_t threadComplete[USE_PTHREADS_COUNT];
+uint8_t threadComplete[numThreads];
 
 static void *run(struct Partition *p)
 {
@@ -830,10 +861,14 @@ while (!exitNow) {
     /* Clock is incremented at the start, so it starts at 1 */
     ++cycle;
     if ((!(cycle % REPORT_FREQUENCY))) {
+        if(threadNo == 0){
+            globalcycle = cycle;
+        }
         threadComplete[threadNo] = 1;
-        uint8_t allDone = USE_PTHREADS_COUNT;
+        uint8_t allDone = numThreads;
         while(allDone>0){
-            for(int i=0; i<USE_PTHREADS_COUNT; i++){
+            allDone = numThreads;
+            for(int i=0; i<numThreads; i++){
                 if(threadComplete[i]){
                     allDone--;
                 }
@@ -1343,6 +1378,8 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 #endif /* USE_SDL */
 /*Initialization moved into makePartitions*/ 
 
+    pthread_t reportThread;
+    pthread_create(&reportThread,0,runReporting,NULL);
 #ifdef USE_PTHREADS_COUNT
 
 	pthread_t threads[USE_PTHREADS_COUNT];
