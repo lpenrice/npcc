@@ -505,26 +505,6 @@ fprintf(file,"\n");
 }
 #endif
 
-static inline void globalCoord(uintptr_t x, uintptr_t y, uint64_t threadNo, uintptr_t *globals ) {
-    switch (threadNo) {
-        case 0:
-            globals[0] = x;
-            globals[1] = y;
-            break;
-        case 1:
-            globals[0] = x+(POND_SIZE_X/2);
-            globals[1] = y;
-            break;
-        case 2:
-            globals[0] = x;
-            globals[1] = y+(POND_SIZE_Y/2);
-            break;
-        case 3:
-            globals[0] = x+(POND_SIZE_X/2);
-            globals[1] = y+(POND_SIZE_Y/2);
-            break;
-    }
-}
 
 static inline struct Cell *getNeighbor(const uintptr_t x,const uintptr_t y,const uintptr_t dir, struct Partition *curP)
 {
@@ -919,8 +899,9 @@ while (!exitNow) {
 #else
         pptr->energy += INFLOW_RATE_BASE;
 #endif /* INFLOW_RATE_VARIATION */
-        for(i=0;i<POND_DEPTH_SYSWORDS;++i) 
+        for(i=0;i<POND_DEPTH_SYSWORDS;++i){ 
             pptr->genome[i] = getRandom();
+        }
         ++cellIdCounter;
     
         /* Update the random cell on SDL screen if viz is enabled */
@@ -938,16 +919,12 @@ while (!exitNow) {
     x = i % width;
     y = ((i / width) >> 1) % height;
 
-    uintptr_t globals[2];
-    globalCoord(x,y,threadNo,globals);
-    uintptr_t globalx = globals[0];
-    uintptr_t globaly = globals[1];
-
     pptr = &topLeft[x][y];
 
     /* Reset the state of the VM prior to execution */
-    for(i=0;i<POND_DEPTH_SYSWORDS;++i)
+    for(i=0;i<POND_DEPTH_SYSWORDS;++i) {
         outputBuf[i] = ~((uintptr_t)0); /* ~0 == 0xfffff... */
+    }
     ptr_wordPtr = 0;
     ptr_shiftPtr = 0;
     reg = 0;
@@ -1088,7 +1065,7 @@ while (!exitNow) {
                     currentWord = pptr->genome[wordPtr];
                     break;
                 case 0xd: /* KILL: Blow away neighboring cell if allowed with penalty on failure */
-                    tmpptr = getNeighbor(globalx,globaly,facing,p);
+                    tmpptr = getNeighbor(x,y,facing,p);
                     if (accessAllowed(tmpptr,reg,0)) {
                         if (tmpptr->generation > 2)
                             ++statCounters.viableCellsKilled;
@@ -1109,7 +1086,7 @@ while (!exitNow) {
                     }
                     break;
                 case 0xe: /* SHARE: Equalize energy between self and neighbor if allowed */
-                    tmpptr = getNeighbor(globalx,globaly,facing,p);
+                    tmpptr = getNeighbor(x,y,facing,p);
                     if (accessAllowed(tmpptr,reg,1)) {
 #ifdef USE_PTHREADS_COUNT
                         pthread_mutex_lock(&(tmpptr->lock));
@@ -1147,7 +1124,7 @@ while (!exitNow) {
      * would never be executed and then would be replaced with random
      * junk eventually. See the seeding code in the main loop above. */
     if ((outputBuf[0] & 0xff) != 0xff) {
-        tmpptr = getNeighbor(globalx,globaly,facing, p);
+        tmpptr = getNeighbor(x,y,facing, p);
 #ifdef USE_PTHREADS_COUNT
         pthread_mutex_lock(&(tmpptr->lock));
 #endif
@@ -1161,8 +1138,9 @@ while (!exitNow) {
             tmpptr->lineage = pptr->lineage; /* Lineage is copied in offspring */
             tmpptr->generation = pptr->generation + 1;
 
-            for(i=0;i<POND_DEPTH_SYSWORDS;++i)
+            for(i=0;i<POND_DEPTH_SYSWORDS;++i) {
                 tmpptr->genome[i] = outputBuf[i];
+            }
         }
 #ifdef USE_PTHREADS_COUNT
         pthread_mutex_unlock(&(tmpptr->lock));
@@ -1345,9 +1323,9 @@ while ((opt = getopt(argc, argv, "x:y:m:f:v:b:p:c:k:d:ht:")) != -1) {
 	prngState[1] = (uint64_t)rand();
 
 	/* Reset per-report stat counters */
-	for(x=0;x<sizeof(statCounters);++x)
+	for(x=0;x<sizeof(statCounters);++x) {
 		((uint8_t *)&statCounters)[x] = (uint8_t)0;
-	
+    }
 	/* Set up SDL if we're using it */
 #ifdef USE_SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0 ) {
