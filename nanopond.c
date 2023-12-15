@@ -746,14 +746,13 @@ static void *runReporting(){
             sem_getvalue(&workdone,&result);
         }
         //workdone=0;//?
-        for (uint64_t i; i<numThreads;i++) sem_wait(&workdone);
-
+        for (uint64_t i=0; i<numThreads;i++) sem_wait(&workdone);
         sem_getvalue(&memcopied,&result);
         while (result!=numThreads) {
             sem_getvalue(&memcopied,&result);
         }
         //memcopied=0;
-        for (uint64_t i; i<numThreads;i++) sem_wait(&memcopied);
+        for (uint64_t i=0; i<numThreads;i++) sem_wait(&memcopied);
         doReport(globalcycle);
     
     }
