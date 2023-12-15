@@ -740,7 +740,9 @@ static void *runReporting(){
         while(allDone>0){
             allDone = numThreads;
             for(uint64_t i=0; i<numThreads; i++){
+                printf("in first for loop\n");
                 if(threadComplete[i]){
+                    printf("Should be 1: %d\n", threadComplete[i]);
                     allDone--;
                 }
             }
@@ -749,14 +751,15 @@ static void *runReporting(){
         while(allDone>0){
             allDone = numThreads;
             for(uint i=0; i<numThreads; i++){
+                printf("in second for loop\n");
                 if(!threadComplete[i]){
+                    printf("Should be 0: %d\n", threadComplete[i]);
                     allDone--;
                 }
             }
         }
         doReport(globalcycle);
     }
-
         return (void *)0;
 }
 
@@ -866,6 +869,7 @@ while (!exitNow) {
         /** all threads finished if we've gotten to this point */
         
         /** NOW WE COPY MEMORY BUT DONT ASK ME HOW */
+        copyMem(p);
         
         threadComplete[threadNo] = 0;
     }
